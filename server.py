@@ -36,8 +36,8 @@ class Server:
 
             self.connections.append(connection)
 
-    def handle_new_msg(self, conn: Connection, msg: str) -> None:
-        logger.info(f"[{conn.address}]: {msg}")
+    def handle_new_msg(self, con_id: str, msg: str) -> None:
+        logger.info(f"[{con_id}]: {msg}")
 
     def stop(self) -> None:
         logger.info("Stopping the server.")
