@@ -1,11 +1,12 @@
 import asyncio
 import logging
-LOG_FORMAT = "%(asctime)s - %(funcName)s:%(lineno)s [%(levelname)s] %(message)s"
+LOG_FORMAT = "%(asctime)s - [%(levelname)s] %(message)s"
 logging.basicConfig(format=LOG_FORMAT)
 logging.getLogger().setLevel(logging.INFO)
 
 from typing import Tuple, List, Any
 from socket import socket, AF_INET, SOCK_STREAM
+from connection import Connection
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ loop = asyncio.get_event_loop()
 
 class Server:
     sock: socket = socket(AF_INET, SOCK_STREAM)
-    connections: List[Tuple[socket, Any]] = []
+    connections: List[Connection] = []
 
     def __init__(self) -> None:
         self.sock.setblocking(False)
@@ -26,16 +27,19 @@ class Server:
         self.sock.bind(("localhost", port))
         self.sock.listen(8)
 
-    async def accept_connections(self):
+    async def accept_connections(self) -> None:
         logger.info("Listening for new connections.")
         while True:
-            connection, address = await loop.sock_accept(self.sock)
+            conn, address = await loop.sock_accept(self.sock)
             logger.info(f"Received a new connection from: {address}")
+            connection = Connection(loop, conn, address, self.handle_new_msg)
 
-            self.connections.append((connection, address))
+            self.connections.append(connection)
 
+    def handle_new_msg(self, conn: Connection, msg: str) -> None:
+        logger.info(f"[{conn.address}]: {msg}")
 
-    def stop(self):
+    def stop(self) -> None:
         logger.info("Stopping the server.")
         self.sock.close()
 
