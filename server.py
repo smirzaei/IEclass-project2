@@ -32,12 +32,20 @@ class Server:
         while True:
             conn, address = await loop.sock_accept(self.sock)
             logger.info(f"Received a new connection from: {address}")
-            connection = Connection(loop, conn, address, self.handle_new_msg)
+            connection = Connection(loop, conn, address, self.broadcast_msg)
 
             self.connections.append(connection)
 
-    def handle_new_msg(self, con_id: str, msg: str) -> None:
-        logger.info(f"[{con_id}]: {msg}")
+    def broadcast_msg(self, from_con_id: str, msg: str) -> None:
+        logger.info(f"[{from_con_id}]: {msg}")
+
+        counter = 0
+        for conn in filter(lambda c: c.id != from_con_id ,self.connections):
+            loop.create_task(conn.send_msg(f"[{from_con_id}]: {msg}\n"))
+            counter += 1
+
+        logger.info(f"Broadcasted to {counter} clients.")
+
 
     def stop(self) -> None:
         logger.info("Stopping the server.")

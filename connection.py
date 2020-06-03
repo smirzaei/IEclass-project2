@@ -9,8 +9,6 @@ logger = logging.getLogger(__name__)
 from uuid import uuid4
 
 class Connection:
-    id = uuid4().hex
-
     def __init__(
         self,
         event_loop: AbstractEventLoop,
@@ -18,6 +16,7 @@ class Connection:
         address: Any,
         on_msg: Callable[[str, str], None]
     ) -> None:
+        self.id = uuid4().hex
         self.sock = sock
         self.event_loop = event_loop
         self.address = address
@@ -33,6 +32,7 @@ class Connection:
 
         event_loop.create_task(self.listen_for_msgs())
         event_loop.create_task(self.send_msg(welcome_msg))
+        logger.info(f"[{self.id}] initialized.")
 
     async def listen_for_msgs(self) -> None:
         while True:
