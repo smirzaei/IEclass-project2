@@ -4,7 +4,7 @@ LOG_FORMAT = "%(asctime)s - [%(levelname)s] %(message)s"
 logging.basicConfig(format=LOG_FORMAT)
 logging.getLogger().setLevel(logging.INFO)
 
-from typing import Tuple, List, Any
+from typing import List
 from socket import socket, AF_INET, SOCK_STREAM
 from connection import Connection
 
@@ -32,7 +32,7 @@ class Server:
         while True:
             conn, address = await loop.sock_accept(self.sock)
             logger.info(f"Received a new connection from: {address}")
-            connection = Connection(loop, conn, address, self.broadcast_msg)
+            connection = Connection(loop, conn, address, self.broadcast_msg, self.remove_connection)
 
             self.connections.append(connection)
 
@@ -40,12 +40,14 @@ class Server:
         logger.info(f"[{from_con_id}]: {msg}")
 
         counter = 0
-        for conn in filter(lambda c: c.id != from_con_id ,self.connections):
+        for conn in filter(lambda c: c.id != from_con_id, self.connections):
             loop.create_task(conn.send_msg(f"[{from_con_id}]: {msg}\n"))
             counter += 1
 
         logger.info(f"Broadcasted to {counter} clients.")
 
+    def remove_connection(self, con_id) -> None:
+        self.connections = list(filter(lambda c: c.id != con_id, self.connections))
 
     def stop(self) -> None:
         logger.info("Stopping the server.")

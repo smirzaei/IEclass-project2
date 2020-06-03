@@ -14,13 +14,16 @@ class Connection:
         event_loop: AbstractEventLoop,
         sock: socket,
         address: Any,
-        on_msg: Callable[[str, str], None]
+        on_msg: Callable[[str, str], None],
+        on_dc: Callable[[str], None]
     ) -> None:
+
         self.id = uuid4().hex
         self.sock = sock
         self.event_loop = event_loop
         self.address = address
         self.on_msg = on_msg
+        self.on_dc = on_dc
 
         welcome_msg = dedent("""
             ===============================================
@@ -44,10 +47,19 @@ class Connection:
 
                 except UnicodeDecodeError:
                     logger.error("Received a message which isn't in UTF8 format.")
-                    self.sock.close()
+                    self.disconnect()
                     break
 
     async def send_msg(self, msg: str) -> None:
-        await self.event_loop.sock_sendall(self.sock, msg.encode("utf-8"))
+        try:
+            await self.event_loop.sock_sendall(self.sock, msg.encode("utf-8"))
+        except:
+            logger.error(f"[{self.id}] Failed to send message.")
+            self.disconnect()
+
+    def disconnect(self) -> None:
+        logger.info(f"[{self.id}] Disconnecting client.")
+        self.sock.close()
+        self.on_dc(self.id)
 
         
