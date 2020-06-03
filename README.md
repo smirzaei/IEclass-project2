@@ -1,0 +1,1 @@
+A simple chat server for school project.
