@@ -18,6 +18,9 @@ class Server:
         self.sock.bind(("localhost", port))
         self.sock.listen(1)
 
+    def stop(self):
+        logger.info("Stopping the server.")
+        self.sock.close()
 
 server = Server()
 server.start(PORT)
