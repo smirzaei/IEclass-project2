@@ -23,7 +23,7 @@ class Server:
 
     def start(self, port: int):
         logger.info(f"Starting the server on port: {port}")
-        
+
         self.sock.bind(("localhost", port))
         self.sock.listen(8)
 
