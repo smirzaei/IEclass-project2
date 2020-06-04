@@ -9,24 +9,28 @@ from socket import socket, AF_INET, SOCK_STREAM
 
 logger = logging.getLogger(__name__)
 
-loop = asyncio.get_event_loop()
-
 class Client:
-
     def __init__(self, host: str, port: int) -> None:
         self.host = host
         self.port = port
-        self.sock = socket(AF_INET, SOCK_STREAM)
 
     async def connect(self) -> None:
         logger.info(f"Connecting to {self.host}:{self.port}")
-        await loop.sock_connect(self.sock, (self.host, self.port))
+        reader, writer = await asyncio.open_connection(self.host, self.port)
+
+        self.reader = reader
+        self.writer = writer
+
+    async def send(self, msg: str) -> None:
+        self.writer.write(msg.encode("utf-8"))
+        await self.writer.drain()
+
 
     async def listen_for_messages(self) -> None:
         logger.info("Listening for server messages.")
 
         while True:
-            data = await loop.sock_recv(self.sock, 128)
+            data = await self.reader.read(128)
             if len(data):
                 try:
                     msg = data.decode("utf-8").strip()
@@ -41,13 +45,16 @@ class Client:
 
         while True:
             msg = input()
-            await loop.sock_sendall(self.sock, msg.encode("utf-8"))
+            await self.send(msg)
 
-
-    def disconnect(self) -> None:
+    async def disconnect(self) -> None:
         logger.info("Disconnecting.")
+        
+        self.writer.close()
+        await self.writer.wait_closed()
+        
         exit(0)
-        pass
+    
 
 async def run():
     host = input("Please enter server address: ")
@@ -55,16 +62,14 @@ async def run():
 
     client = Client(host, port)
     await client.connect()
+    read_task = asyncio.create_task(client.listen_for_messages())
+    send_msg_task = asyncio.create_task(client.send_user_input())
 
-    send_user_input_task = loop.create_task(client.send_user_input())
-    listen_for_msg_task = loop.create_task(client.listen_for_messages())
-    
-
-    asyncio.wait([
-        listen_for_msg_task,
-        send_user_input_task
+    await asyncio.wait([
+        read_task,
+        send_msg_task
     ])
 
-
-
-loop.run_until_complete(run())
+    await client.disconnect()
+    
+asyncio.run(run())
