@@ -17,11 +17,15 @@ class Client:
         self.host = host
         self.port = port
         self.sock = socket(AF_INET, SOCK_STREAM)
+        #self.sock.connect((host, port))
 
-        loop.create_task(self.listen_for_messages())
-        loop.create_task(self.send_user_input())
+    async def connect(self) -> None:
+        logger.info(f"Connecting to {self.host}:{self.port}")
+        await loop.sock_connect(self.sock, (self.host, self.port))
 
     async def listen_for_messages(self) -> None:
+        logger.info("Listening for server messages.")
+
         while True:
             data = await loop.sock_recv(self.sock, 128)
             if len(data):
@@ -34,16 +38,34 @@ class Client:
                     break
 
     async def send_user_input(self) -> None:
+        logger.info("Listening for user input.")
+
         while True:
             msg = input()
             await loop.sock_sendall(self.sock, msg.encode("utf-8"))
+
 
     def disconnect(self) -> None:
         logger.info("Disconnecting.")
         exit(0)
         pass
 
-host = input("Please enter server address: ")
-port = int(input("Please enter server port: "))
+async def run():
+    host = input("Please enter server address: ")
+    port = int(input("Please enter server port: "))
 
-client = Client(host, port)
+    client = Client(host, port)
+    await client.connect()
+
+    send_user_input_task = loop.create_task(client.send_user_input())
+    listen_for_msg_task = loop.create_task(client.listen_for_messages())
+    
+
+    asyncio.wait([
+        listen_for_msg_task,
+        send_user_input_task
+    ])
+
+
+
+loop.run_until_complete(run())
