@@ -25,7 +25,7 @@ class Client:
             try:
                 (data, _, _, _) = self.sock.recvmsg(256)
                 if len(data) > 0:
-                    logger.info(data.decode(encoding='utf-8').strip())
+                    print(data.decode(encoding='utf-8').strip())
                 else:
                     logger.info("Connection closed.")
                     self.disconnect()
