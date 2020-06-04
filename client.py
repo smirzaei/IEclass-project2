@@ -17,6 +17,7 @@ class Client:
         self.host = host
         self.port = port
         self.sock = socket(AF_INET, SOCK_STREAM)
+        self.sock.setblocking(False)
 
     async def connect(self) -> None:
         logger.info(f"Connecting to {self.host}:{self.port}")
@@ -59,11 +60,11 @@ async def run():
     send_user_input_task = loop.create_task(client.send_user_input())
     listen_for_msg_task = loop.create_task(client.listen_for_messages())
     
-
-    asyncio.wait([
+    await asyncio.wait([
         listen_for_msg_task,
         send_user_input_task
     ])
+    exit(0)
 
 
 
