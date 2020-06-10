@@ -23,7 +23,7 @@ class Client:
     def receve_msg(self) -> None:
         while True:
             try:
-                (data, _, _, _) = self.sock.recvmsg(256)
+                data = self.sock.recv(256)
                 if len(data) > 0:
                     print(data.decode(encoding='utf-8').strip())
                 else:
